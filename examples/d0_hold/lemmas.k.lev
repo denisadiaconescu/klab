@@ -1,0 +1,57 @@
+rule #take(N, #padToWidth(N, X) ++ Z ) => X
+rule #asWord( #asByteStack( X ) ) => X
+
+//rule (#unsigned(A) -Int #unsigned(B)) => #unsigned(A -Int B)
+//  requires #rangeSInt(256, A)
+//  andBool #rangeSInt(256, B)
+//  andBool #rangeSInt(256, A -Int B)
+
+//rule (#unsigned(A) +Int #unsigned(B)) => #unsigned(A +Int B)
+//  requires #rangeSInt(256, A)
+//  andBool #rangeSInt(256, B)
+//  andBool #rangeSInt(256, A +Int B)
+
+//rule (#unsigned(Y) -Word #unsigned(X)) => (Y -Int X +Int pow256)
+//  requires #rangeSInt(256, Y)
+//  andBool #rangeSInt(256, X)
+//  andBool (X >Int Y)
+
+//rule (#unsigned(Y) -Word #unsigned(X)) => (Y -Int X)
+//  requires #rangeSInt(256, Y)
+//  andBool #rangeSInt(256, X)
+//  andBool (notBool (X >Int Y))
+
+//rule (#unsigned(Y) +Word #unsigned(X)) => (Y +Int X +Int pow256)
+//  requires #rangeSInt(256, Y)
+//  andBool #rangeSInt(256, X)
+//  andBool (Y +Int X <Int 0) 
+
+//rule (#unsigned(Y) +Word #unsigned(X)) => (Y +Int X)
+//  requires #rangeSInt(256, Y)
+//  andBool #rangeSInt(256, X)
+//  andBool (notBool (Y +Int X <Int 0))
+
+// rule ( (#unsigned ( B ) s<Word 0 ) &Int bool2Word ( A s<Word #unsigned ( A -Int B ) ==Int 0 ) ) => 0
+//   requires minSInt256 <=Int A andBool A <=Int maxSInt256
+//   andBool  minSInt256 <=Int B andBool B <=Int maxSInt256
+//   andBool  minSInt256 <=Int (A -Int B)
+//   andBool  (A -Int B) <=Int maxSInt256
+//
+// rule ( ( 0 s<Word #unsigned ( V1 ) ) &Int bool2Word ( #unsigned ( V -Int V1 ) s<Word V ==Int 0 ) ) => 0
+//   requires minSInt256 <=Int A andBool A <=Int maxSInt256
+//   andBool  minSInt256 <=Int B andBool B <=Int maxSInt256
+//   andBool  minSInt256 <=Int (A -Int B)
+//   andBool  (A -Int B) <=Int maxSInt256
+
+rule W0 s<Word W1 => #signed(W0) <Word #signed(W1)
+
+// Lev checked:
+rule #signed(#unsigned(W)) => W
+  requires #rangeSInt(256, W)
+
+// Lev checked:
+rule #unsigned(#signed(W)) => W
+  requires #rangeUInt(256, W)
+
+// rule W <Int #if B #then W0 #else W1 #fi => (B impliesBool
+rule #hashedLocation("DappHub", BASE, OFFSET OFFSETS) => #hashedLocation("DappHub", keccakIntList(BASE OFFSET),       OFFSETS)

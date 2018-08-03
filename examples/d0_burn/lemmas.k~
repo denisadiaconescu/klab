@@ -1,0 +1,174 @@
+// corrected version
+// rule #take(N, #padToWidth(N, WS) ++ WS' ) => WS
+//   requires notBool #sizeWordStack(WS) <Int N
+
+// generalised version:
+rule #take(N, #padToWidth(N, WS) ++ WS' ) => #padToWidth(N, WS)
+
+// new lemmas needed for burn calldata:
+rule #take(N, #padToWidth(M, WS) ++ WS') => #padToWidth(N, #take(N -Int M +Int #sizeWordStack(WS), WS))
+  requires N >Int M -Int #sizeWordStack(WS)
+
+rule #take(N, #padToWidth(M, WS) ++ WS') => #padToWidth(N, .WordStack)
+  requires N <=Int M -Int #sizeWordStack(WS)
+
+// old bit:
+// rule #take(N, #padToWidth(N, X) ++ Z ) => X
+
+// another useful one for calldataload
+rule #asWord(#padToWidth(32, #asByteStack(#unsigned(X)))) => #unsigned(X)
+  requires #rangeSInt(256, X)
+
+// shifting trick in the beginning of ABI thing:
+// dividing by 16^56 == 2^224 is the same as shifting to last 4 bytes
+// needed for e.g. burn
+rule #asWord(W : X : Y : Z : WS) /Int 26959946667150639794667015087019630673637144422540572481103610249216 => #asWord(W : X : Y : Z : .WordStack)
+
+// why won't the more general version work???
+// rule #asWord(#padToWidth(32, #asByteStack(X))) => X
+//   requires #rangeUInt(256, X)
+
+rule #asWord( #asByteStack( X ) ) => X
+
+rule #take(N, #padToWidth(M, WS) ++ WS') => #padToWidth(N, .WordStack)
+  requires N <=Int M -Int #sizeWordStack(WS)
+
+// propositional rules
+rule notBool (P orBool Q) => (notBool P) andBool (notBool Q)
+rule notBool (P andBool Q) => (notBool P) orBool (notBool Q)
+rule notBool (notBool P) => P
+
+// syntax K ::= "#mif" Bool "#mthen" K "#melse" K "#mfi" [function, poly(0, 2, 3)]
+// // --------------------------------------------------------------------------
+// rule P:Bool andBool ( #mif Q:Bool #mthen X:Bool #melse _ #mfi )
+//   => P andBool X
+//   requires (P impliesBool Q)
+	  
+// rule P:Bool andBool ( #mif Q:Bool #mthen _ #melse Y:Bool #mfi )
+//   => P andBool Y
+//   requires (P impliesBool (notBool Q))
+
+// rule ( #mif Q:Bool #mthen X #melse _ #mfi )
+//   => X
+//   requires Q
+
+// rule ( #mif Q:Bool #mthen _ #melse Y #mfi )
+//   => Y
+//   requires (notBool Q)
+
+// rule ( #mif Q:Bool #mthen X:Bool #melse Y:Bool #mfi )
+//   => X
+//   requires (notBool Y)
+
+// rule ( #mif Q:Bool #
+
+// // confluence
+// rule #mif P #mthen X #melse X #mfi
+//   => X
+
+// // naturality
+// // rule f (#mif P #mthen X #melse Y #mfi)
+// //   => (#mif P #mthen f ( X ) #melse f ( Y ) #mfi)
+
+// // special case of naturality
+// rule notBool (#mif P #mthen X:Bool #melse Y:Bool #mfi)
+//   => (#mif P #mthen (notBool X) #melse (notBool Y) #mfi)
+
+// rule #signed (#unsigned(A) -Word #unsigned(B))
+//   => (#mif (0 <Int B) 
+//       #mthen (#mif (A -Int B >= minSInt256)
+//       	      #mthen (A -Int B)
+// 	      #melse (A -Int B + pow256)
+// 	      #mfi)
+//       #melse (#mif (A -Int B <= maxSInt256)
+//       	      #mthen (A -Int B)
+// 	      #melse (A -Int B - pow256)
+// 	      #mfi)
+//       #mfi)
+//   requires #rangeSInt(256, A)
+//   andBool #rangeSInt(256, B)
+
+// rule #unsigned(A) -Word #unsigned(B)
+//   => (#mif B >Int A
+//       #mthen (A -Int B +Int pow256)
+//       #melse (A -Int B)
+//       #mfi)
+//   requires #rangeSInt(256, A)
+//   andBool #rangeSInt(256, B)
+
+// rule #signed (#unsigned(A) -Word #unsigned(B)) <Int A
+//   => (#mif (0 <Int B)
+//       #mthen (A -Int B >=Int minSInt256)
+//       #melse notBool (A -Int B <=Int maxSInt256)
+//       #mfi)
+//   requires #rangeSInt(256, A)
+//   andBool #rangeSInt(256, B)
+
+// // effectively duplicating this rule as test:
+// rule A <Int #signed (#unsigned(A) -Word #unsigned(B))
+//   => (#mif (0 >Int B)
+//       #mthen (A -Int B <=Int maxSInt256)
+//       #melse notBool (A -Int B >=Int minSInt256)
+//       #mfi)
+//   requires #rangeSInt(256, A)
+//   andBool #rangeSInt(256, B)
+
+// lemmas to tell us that our non-overflow conditions are sufficient
+rule (#unsigned(A) -Word #unsigned(B)) => #unsigned(A -Int B)
+  requires #rangeSInt(256, A)
+  andBool #rangeSInt(256, B)
+  andBool #rangeSInt(256, A -Int B)
+
+// n.b. how + cases use +Int because of earlier application of +Word 
+rule (#unsigned(A) +Int #unsigned(B)) => #unsigned(A +Int B)
+  requires #rangeSInt(256, A)
+  andBool #rangeSInt(256, B)
+  andBool #rangeSInt(256, A +Int B)
+
+rule #signed(#unsigned(W)) => W
+  requires #rangeSInt(256, W)
+
+rule #unsigned(#signed(W)) => W
+  requires #rangeUInt(256, W)
+
+// need also?
+//rule chop (#unsigned(A)) => #unsigned(A)
+//  requires #rangeSInt(256, A)
+
+rule W0 s<Word W1 => #signed(W0) <Word #signed(W1)
+
+// lemmas to tell us that our non-overflow conditions are necessary for
+// the overflow checks in iadd and isub
+
+// these just encode implications
+// (¬A or B) is (A -> B) 
+rule (notBool (0 <Int B))
+    orBool
+     (#signed (#unsigned(A) -Word #unsigned(B)) <Int A)
+    => (A -Int B >=Int minSInt256)	      
+  requires #rangeSInt(256, A)
+  andBool  #rangeSInt(256, B)
+
+rule (notBool (B <Int 0))
+    orBool
+     (A <Int #signed (#unsigned(A) -Word #unsigned(B)))
+    => (A -Int B <=Int maxSInt256)	      
+  requires #rangeSInt(256, A)
+  andBool  #rangeSInt(256, B)
+
+// n.b. how + cases use chop and +Int because of earlier application of +Word 
+rule (notBool (0 <Int B))
+    orBool
+     (A <Int #signed (chop (#unsigned (A) +Int #unsigned (B))))
+    => (A +Int B <=Int maxSInt256)
+  requires #rangeSInt(256, A)
+  andBool  #rangeSInt(256, B)
+
+rule (notBool (B <Int 0))
+    orBool
+     (#signed (chop (#unsigned (A) +Int #unsigned (B))) <Int A)
+    => (A +Int B >=Int minSInt256)
+  requires #rangeSInt(256, A)
+  andBool  #rangeSInt(256, B)
+ 
+rule #hashedLocation("DappHub", BASE, OFFSET OFFSETS) => #hashedLocation("DappHub", keccakIntList(BASE OFFSET),       OFFSETS)
