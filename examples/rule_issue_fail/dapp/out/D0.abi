@@ -1,0 +1,1 @@
+[{"constant":false,"inputs":[{"name":"","type":"address"},{"name":"","type":"int256"}],"name":"suck","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]
