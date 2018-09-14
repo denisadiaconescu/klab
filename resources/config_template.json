@@ -22,6 +22,7 @@
     "\u0010" : "prev_branch",
     "e"      : "toggle_module evm",
     "b"      : "toggle_module behaviour",
+    "m"      : "toggle_module memory",
     "c"      : "toggle_module constraint",
     "r"      : "toggle_module rule",
     "z"      : "toggle_module z3feedback",
